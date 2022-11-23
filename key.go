@@ -103,6 +103,7 @@ type PrivateKey interface {
 
 	// Signs the data
 	Sign(method Method, data []byte) ([]byte, error)
+	PureSign(method Method, data []byte) ([]byte, error)
 
 	// MarshalPKCS1PrivateKeyPEM converts the private key to PEM-encoded PKCS1
 	// format
