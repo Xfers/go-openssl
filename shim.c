@@ -77,6 +77,23 @@ int X_EVP_DigestVerify(EVP_MD_CTX *ctx, const unsigned char *sigret,
 	return EVP_DigestVerify(ctx, sigret, siglen, tbs, tbslen);
 }
 
+int X_EVP_PKEY_sign_init(EVP_PKEY_CTX *ctx){
+	return EVP_PKEY_sign_init(ctx);
+}
+
+int X_EVP_PKEY_CTX_set_rsa_padding(EVP_PKEY_CTX *ctx, int pad_mode){
+	return EVP_PKEY_CTX_set_rsa_padding(ctx, pad_mode);
+}
+
+int X_EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX *ctx, const EVP_MD *md){
+	return EVP_PKEY_CTX_set_signature_md(ctx, md);
+}
+
+int X_EVP_PKEY_sign(EVP_PKEY_CTX *ctx, unsigned char *sig, size_t *siglen,
+		const unsigned char *tbs, size_t tbslen){
+	return EVP_PKEY_sign(ctx, sig, siglen, tbs, tbslen);
+}
+
 #else
 
 const int X_ED25519_SUPPORT = 0;
@@ -126,6 +143,14 @@ EVP_MD_CTX* X_EVP_MD_CTX_new() {
 
 void X_EVP_MD_CTX_free(EVP_MD_CTX* ctx) {
 	EVP_MD_CTX_free(ctx);
+}
+
+EVP_PKEY_CTX* X_EVP_PKEY_CTX_new(EVP_PKEY *pkey, ENGINE *e) {
+	return EVP_PKEY_CTX_new(pkey, e);
+}
+
+void X_EVP_PKEY_CTX_free(EVP_PKEY_CTX* ctx) {
+	EVP_PKEY_CTX_free(ctx);
 }
 
 static int x_bio_create(BIO *b) {
