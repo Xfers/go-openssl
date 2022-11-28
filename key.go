@@ -185,7 +185,6 @@ func (key *pKey) SignPKCS1v15(method Method, data []byte) ([]byte, error) {
 }
 
 func (key *pKey) Sign(method Method, data []byte) ([]byte, error) {
-	// std::vector<uint8_t> sign(const uint8_t *data, size_t size) const
 	ctx := C.X_EVP_MD_CTX_new()
 	defer C.X_EVP_MD_CTX_free(ctx)
 
@@ -211,7 +210,7 @@ func (key *pKey) Sign(method Method, data []byte) ([]byte, error) {
 
 }
 
-func (key *pKey) PureSign(method Method, data []byte) ([]byte, error) {
+func (key *pKey) PureSign(method Method, digest []byte) ([]byte, error) {
 	ctx := C.X_EVP_PKEY_CTX_new(key.key, nil)
 	if ctx == nil {
 		return nil, errors.New("EVP_PKEY_CTX_new")
@@ -228,14 +227,14 @@ func (key *pKey) PureSign(method Method, data []byte) ([]byte, error) {
 		return nil, errors.New("EVP_PKEY_CTX_set_signature_md")
 	}
 	var msgLenEnc C.size_t = 0
-	if C.X_EVP_PKEY_sign(ctx, nil, &msgLenEnc, (*C.uchar)(unsafe.Pointer(&data[0])),
-		C.size_t(len(data))) <= 0 {
+	if C.X_EVP_PKEY_sign(ctx, nil, &msgLenEnc, (*C.uchar)(unsafe.Pointer(&digest[0])),
+		C.size_t(len(digest))) <= 0 {
 		return nil, errors.New("EVP_PKEY_sign get length")
 	}
 
 	sig := make([]byte, msgLenEnc)
 	if C.X_EVP_PKEY_sign(ctx, (*C.uchar)(unsafe.Pointer(&sig[0])), &msgLenEnc,
-		(*C.uchar)(unsafe.Pointer(&data[0])), C.size_t(len(data))) <= 0 {
+		(*C.uchar)(unsafe.Pointer(&digest[0])), C.size_t(len(digest))) <= 0 {
 		return nil, errors.New("EVP_PKEY sign")
 	}
 
