@@ -212,26 +212,34 @@ func (key *pKey) Sign(method Method, data []byte) ([]byte, error) {
 }
 
 func (key *pKey) PureSign(method Method, data []byte) ([]byte, error) {
-	// std::vector<uint8_t> sign(const uint8_t *data, size_t size) const
-	ctx := C.X_EVP_MD_CTX_new()
-	defer C.X_EVP_MD_CTX_free(ctx)
+	ctx := C.X_EVP_PKEY_CTX_new(key.key, nil)
+	if ctx == nil {
+		return nil, errors.New("EVP_PKEY_CTX_new")
+	}
+	defer C.X_EVP_PKEY_CTX_free(ctx)
 
-	if C.X_EVP_SignInit(ctx, method) != 1 {
-		return nil, errors.New("signpkcs1v15: failed to init signature")
+	if C.X_EVP_PKEY_sign_init(ctx) <= 0 {
+		return nil, errors.New("EVP_PKEY_sign_init")
 	}
-	if len(data) > 0 {
-		if C.X_EVP_SignUpdate(
-			ctx, unsafe.Pointer(&data[0]), C.uint(len(data))) != 1 {
-			return nil, errors.New("signpkcs1v15: failed to update signature")
-		}
+	if C.X_EVP_PKEY_CTX_set_rsa_padding(ctx, C.RSA_PKCS1_PADDING) <= 0 {
+		return nil, errors.New("EVP_PKEY_CTX_set_rsa_padding")
 	}
-	sig := make([]byte, C.X_EVP_PKEY_size(key.key))
-	var sigblen C.uint
-	if C.X_EVP_SignFinal(ctx,
-		(*C.uchar)(unsafe.Pointer(&sig[0])), &sigblen, key.key) != 1 {
-		return nil, errors.New("signpkcs1v15: failed to finalize signature")
+	if C.X_EVP_PKEY_CTX_set_signature_md(ctx, C.EVP_sha256()) <= 0 {
+		return nil, errors.New("EVP_PKEY_CTX_set_signature_md")
 	}
-	return sig[:sigblen], nil
+	var msgLenEnc C.size_t = 0
+	if C.X_EVP_PKEY_sign(ctx, nil, &msgLenEnc, (*C.uchar)(unsafe.Pointer(&data[0])),
+		C.size_t(len(data))) <= 0 {
+		return nil, errors.New("EVP_PKEY_sign get length")
+	}
+
+	sig := make([]byte, msgLenEnc)
+	if C.X_EVP_PKEY_sign(ctx, (*C.uchar)(unsafe.Pointer(&sig[0])), &msgLenEnc,
+		(*C.uchar)(unsafe.Pointer(&data[0])), C.size_t(len(data))) <= 0 {
+		return nil, errors.New("EVP_PKEY sign")
+	}
+
+	return sig, nil
 }
 
 func (key *pKey) VerifyPKCS1v15(method Method, data, sig []byte) error {
